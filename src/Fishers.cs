@@ -82,6 +82,7 @@ namespace ScarabolMods
         .SetAs ("height", "neutral")
       );
       ItemTypes.AddRawType (FLOAT_TYPE_KEY, new JSONNode ()
+        .SetAs ("onPlaceAudio", MOD_PREFIX + "waterSplashSoft")
         .SetAs ("icon", Path.Combine (RelativeIconsPath, "float.png"))
         .SetAs ("isSolid", false)
         .SetAs ("sideall", "SELF")

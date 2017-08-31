@@ -1,0 +1,9 @@
+{
+  "clipCollectionName" : "waterSplashSoft",
+  "fileList" : [
+    {
+      "path" : "waterSplashSoft.ogg",
+      "audioGroup" : "BlockEditing"
+    }
+  ]
+}
