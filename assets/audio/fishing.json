@@ -1,0 +1,9 @@
+{
+  "clipCollectionName" : "fishing",
+  "fileList" : [
+    {
+      "path" : "fishing.ogg",
+      "audioGroup" : "BlockEditing"
+    }
+  ]
+}

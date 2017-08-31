@@ -234,10 +234,10 @@ namespace ScarabolMods
       } else if (process == PROCESS_STATE.FISHING) {
         if (World.TryGetTypeAt (position + jobdirvec * 3, out actualType) && actualType == itemFloatType) {
           ServerManager.TryChangeBlock (position + jobdirvec * 3, BlockTypes.Builtin.BuiltinBlocks.Air, ServerManager.SetBlockFlags.DefaultAudio);
-          int timeToPull = Pipliz.Random.Next (5, 10);
-          state.SetIndicator (NPCIndicatorType.Crafted, timeToPull, ItemTypes.IndexLookup.GetIndex (FishersModEntries.MOD_PREFIX + "fish"));
+          state.SetIndicator (NPCIndicatorType.Crafted, 1.8f, ItemTypes.IndexLookup.GetIndex (FishersModEntries.MOD_PREFIX + "fish"));
+          ServerManager.SendAudio (position.Vector, FishersModEntries.MOD_PREFIX + "fishing");
           process = PROCESS_STATE.PULLING;
-          OverrideCooldown (timeToPull);
+          OverrideCooldown (1.8f);
         } else {
           Chat.Send (owner, string.Format ("Sam here from {0}, someone stole my fish!", position));
           process = PROCESS_STATE.NONE;
