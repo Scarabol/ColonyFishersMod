@@ -2,5 +2,6 @@
   "rod" : "Fishingrod",
   "fish" : "Fish",
   "bait" : "Bait",
-  "float" : "Float"
+  "float" : "Float",
+  "compostmaker" : "Compost Maker"
 }

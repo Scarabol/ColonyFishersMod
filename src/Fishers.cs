@@ -18,13 +18,37 @@ namespace ScarabolMods
     public static string ROD_TYPE_KEY = MOD_PREFIX + "rod";
     public static string FLOAT_TYPE_KEY = MOD_PREFIX + "float";
     public static string BAIT_TYPE_KEY = MOD_PREFIX + "bait";
+    public static string COMPOST_TYPE_KEY = MOD_PREFIX + "compost";
+
+    public static List<Compostable> Compostables = new List<Compostable> () {
+      new Compostable ("straw", 10),
+      new Compostable ("leavestemperate", 7),
+      new Compostable ("grasstemperate", 2),
+      new Compostable ("dirt", 4),
+      new Compostable ("logtemperate", 3),
+      new Compostable ("logtaiga", 3),
+      new Compostable ("leavestaiga", 7),
+      new Compostable ("grasstaiga", 2),
+      new Compostable ("grasstundra", 2),
+      new Compostable ("grasssavanna", 2),
+      new Compostable ("grassrainforest", 2),
+      new Compostable ("berry", 8),
+      new Compostable ("flax", 3),
+      new Compostable ("sappling", 2),
+      new Compostable ("berrybush", 2),
+      new Compostable ("cherrysapling", 2),
+      new Compostable ("cherryblossom", 6),
+      new Compostable ("wheatstage1", 6),
+      new Compostable ("wheat", 6)
+    };
+
     private static string AssetsDirectory;
     private static string RelativeTexturesPath;
     private static string RelativeIconsPath;
     private static string RelativeMeshesPath;
     private static string RelativeAudioPath;
     private static Recipe rodRecipe;
-    private static Recipe baitRecipe;
+    private static Recipe compostMakerRecipe;
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.OnAssemblyLoaded, "scarabol.fishers.assemblyload")]
     public static void OnAssemblyLoaded (string path)
@@ -50,6 +74,7 @@ namespace ScarabolMods
     public static void AfterDefiningNPCTypes ()
     {
       BlockJobManagerTracker.Register<FisherJob> (ROD_TYPE_KEY);
+      BlockJobManagerTracker.Register<ComposterJob> (MOD_PREFIX + "compostmaker");
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterAddingBaseTypes, "scarabol.fishers.addrawtypes")]
@@ -99,6 +124,38 @@ namespace ScarabolMods
         .SetAs ("isPlaceable", false)
         .SetAs ("nutritionalValue", 4)
       );
+      ItemTypesServer.AddTextureMapping (MOD_PREFIX + "compostMakerSide", new JSONNode ()
+        .SetAs ("albedo", MultiPath.Combine (RelativeTexturesPath, "albedo", "compostMakerSide"))
+        .SetAs ("normal", "neutral")
+        .SetAs ("emissive", "neutral")
+        .SetAs ("height", "neutral")
+      );
+      ItemTypesServer.AddTextureMapping (MOD_PREFIX + "compostMakerTop", new JSONNode ()
+        .SetAs ("albedo", MultiPath.Combine (RelativeTexturesPath, "albedo", "compostMakerTop"))
+        .SetAs ("normal", "neutral")
+        .SetAs ("emissive", "neutral")
+        .SetAs ("height", "neutral")
+      );
+      ItemTypes.AddRawType (MOD_PREFIX + "compostmaker", new JSONNode ()
+        .SetAs ("onPlaceAudio", "dirtPlace")
+        .SetAs ("onRemoveAudio", "grassDelete")
+        .SetAs ("npcLimit", 0)
+        .SetAs ("icon", Path.Combine (RelativeIconsPath, "compostMaker.png"))
+        .SetAs ("sideall", MOD_PREFIX + "compostMakerSide")
+        .SetAs ("sidey+", MOD_PREFIX + "compostMakerTop")
+        .SetAs ("sidey-", "dirt")
+      );
+      ItemTypes.AddRawType (COMPOST_TYPE_KEY, new JSONNode ()
+        .SetAs ("icon", Path.Combine (RelativeIconsPath, "compost.png"))
+        .SetAs ("isPlaceable", false)
+      );
+      foreach (Compostable Comp in Compostables) {
+        ItemTypes.AddRawType (COMPOST_TYPE_KEY + "." + Comp.TypeName, new JSONNode ()
+          .SetAs ("parentType", Comp.TypeName)
+          .SetAs ("isPlaceable", false)
+          .SetAs ("npcLimit", "2000000000")
+        );
+      }
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterItemTypesDefined, "scarabol.fishers.loadrecipes")]
@@ -107,8 +164,27 @@ namespace ScarabolMods
     public static void AfterItemTypesDefined ()
     {
       rodRecipe = new Recipe (new InventoryItem ("blackplanks", 2), new InventoryItem (ROD_TYPE_KEY, 1));
-      baitRecipe = new Recipe (new InventoryItem ("dirt", 4), new InventoryItem (BAIT_TYPE_KEY, 1));
-      RecipeManager.AddRecipes ("pipliz.crafter", new List<Recipe> () { rodRecipe, baitRecipe });
+      compostMakerRecipe = new Recipe (new List<InventoryItem> () {
+        new InventoryItem ("dirt", 1),
+        new InventoryItem ("planks", 1)
+      }, new InventoryItem (MOD_PREFIX + "compostmaker", 1));
+      RecipeManager.AddRecipes ("pipliz.crafter", new List<Recipe> (){ rodRecipe, compostMakerRecipe });
+      List<Compostable> CompostablesLookup = new List<Compostable> ();
+      foreach (Compostable Comp in Compostables) {
+        if (ItemTypes.IndexLookup.TryGetIndex (Comp.TypeName, out Comp.Type) &&
+            ItemTypes.IndexLookup.TryGetIndex (COMPOST_TYPE_KEY + "." + Comp.TypeName, out Comp.CompostType)) {
+          CompostablesLookup.Add (Comp);
+        } else {
+          Pipliz.Log.WriteError (string.Format ("Index lookup failed for compostable {0}", Comp.TypeName));
+        }
+      }
+      Compostables = CompostablesLookup;
+      List<Recipe> compostRecipes = new List<Recipe> ();
+      compostRecipes.Add (new Recipe (new InventoryItem (COMPOST_TYPE_KEY, 1), new InventoryItem (BAIT_TYPE_KEY, 1)));
+      foreach (Compostable Comp in Compostables) {
+        compostRecipes.Add (new Recipe (new InventoryItem (Comp.Type, Comp.Value), new InventoryItem (Comp.CompostType, 1)));
+      }
+      RecipeManager.AddRecipes ("scarabol.composter", compostRecipes);
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterWorldLoad, "scarabol.fishers.addplayercrafts")]
@@ -116,7 +192,7 @@ namespace ScarabolMods
     {
       // add recipes here, otherwise they're inserted before vanilla recipes in player crafts
       RecipePlayer.AllRecipes.Add (rodRecipe);
-      RecipePlayer.AllRecipes.Add (baitRecipe);
+      RecipePlayer.AllRecipes.Add (compostMakerRecipe);
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.OnTryChangeBlockUser, "scarabol.fishers.trychangeblock")]
