@@ -28,7 +28,9 @@ namespace ScarabolMods
 
     string jobtypename;
     Vector3Int jobdirvec;
-    ushort itemBaitType;
+    ushort itemTypeFloat;
+    ushort itemTypeBait;
+    ushort itemTypeFish;
     PROCESS_STATE process;
     bool needsBait;
 
@@ -39,13 +41,20 @@ namespace ScarabolMods
 
     public override bool NeedsItems { get { return (needsBait); } }
 
+    protected void Init ()
+    {
+      jobdirvec = TypeHelper.RotatableToVector (jobtypename);
+      itemTypeFloat = ItemTypes.IndexLookup.GetIndex (FishersModEntries.FLOAT_TYPE_KEY);
+      itemTypeBait = ItemTypes.IndexLookup.GetIndex (FishersModEntries.BAIT_TYPE_KEY);
+      itemTypeFish = ItemTypes.IndexLookup.GetIndex (FishersModEntries.FISH_TYPE_KEY);
+    }
+
     public ITrackableBlock InitializeOnAdd (Vector3Int position, ushort type, Players.Player player)
     {
       jobtypename = ItemTypes.IndexLookup.GetName (type);
-      jobdirvec = TypeHelper.RotatableToVector (jobtypename);
-      itemBaitType = ItemTypes.IndexLookup.GetIndex (FishersModEntries.MOD_PREFIX + "bait");
       process = PROCESS_STATE.NONE;
       needsBait = false;
+      Init ();
       InitializeJob (player, position, 0);
       return this;
     }
@@ -53,10 +62,9 @@ namespace ScarabolMods
     public override ITrackableBlock InitializeFromJSON (Players.Player player, JSONNode node)
     {
       jobtypename = node.GetAs<string> ("jobtypename");
-      jobdirvec = TypeHelper.RotatableToVector (jobtypename);
-      itemBaitType = ItemTypes.IndexLookup.GetIndex (FishersModEntries.MOD_PREFIX + "bait");
       process = node.GetAs<PROCESS_STATE> ("process");
       needsBait = node.GetAs<bool> ("needsBait");
+      Init ();
       InitializeJob (player, (Vector3Int)node ["position"], node.GetAs<int> ("npcID"));
       return this;
     }
@@ -71,7 +79,6 @@ namespace ScarabolMods
 
     public override void OnNPCDoJob (ref NPCBase.NPCState state)
     {
-      ushort itemFloatType = ItemTypes.IndexLookup.GetIndex (FishersModEntries.FLOAT_TYPE_KEY);
       usedNPC.LookAt ((position + jobdirvec * 3).Vector);
       ushort actualType;
       int waterBlocks = 0;
@@ -97,7 +104,7 @@ namespace ScarabolMods
           Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
           if (World.TryGetTypeAt (posFloat, out actualType) && actualType == BlockTypes.Builtin.BuiltinBlocks.Air &&
               World.TryGetTypeAt (posFloat + Vector3Int.down, out actualType) && actualType == BlockTypes.Builtin.BuiltinBlocks.Water) {
-            ServerManager.TryChangeBlock (posFloat, itemFloatType, ServerManager.SetBlockFlags.DefaultAudio);
+            ServerManager.TryChangeBlock (posFloat, itemTypeFloat, ServerManager.SetBlockFlags.DefaultAudio);
             process = PROCESS_STATE.FISHING;
             OverrideCooldown (DELAY_FISH);
             placedFloat = true;
@@ -105,16 +112,16 @@ namespace ScarabolMods
           }
         }
         if (!placedFloat) {
-          state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, ItemTypes.IndexLookup.GetIndex (FishersModEntries.MOD_PREFIX + "float"));
+          state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, itemTypeFloat);
           OverrideCooldown (8.0f);
         }
       } else if (process == PROCESS_STATE.FISHING) {
         bool foundFloat = false;
         for (int depth = 0; depth < 2; depth++) {
           Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
-          if (World.TryGetTypeAt (posFloat, out actualType) && actualType == itemFloatType) {
+          if (World.TryGetTypeAt (posFloat, out actualType) && actualType == itemTypeFloat) {
             ServerManager.TryChangeBlock (posFloat, BlockTypes.Builtin.BuiltinBlocks.Air, ServerManager.SetBlockFlags.Default);
-            state.SetIndicator (NPCIndicatorType.Crafted, DELAY_PULL, ItemTypes.IndexLookup.GetIndex (FishersModEntries.MOD_PREFIX + "fish"));
+            state.SetIndicator (NPCIndicatorType.Crafted, DELAY_PULL, itemTypeFish);
             ServerManager.SendAudio (position.Vector, FishersModEntries.MOD_PREFIX + "fishing");
             process = PROCESS_STATE.PULLING;
             OverrideCooldown (DELAY_PULL);
@@ -128,11 +135,11 @@ namespace ScarabolMods
           OverrideCooldown (0.5f);
         }
       } else if (process == PROCESS_STATE.PULLING) {
-        state.Inventory.Add (ItemTypes.IndexLookup.GetIndex (FishersModEntries.MOD_PREFIX + "fish"));
+        state.Inventory.Add (itemTypeFish);
         process = PROCESS_STATE.NONE;
         OverrideCooldown (0.5f);
-      } else if (state.Inventory.TryGetOneItem (itemBaitType)) {
-        state.SetIndicator (NPCIndicatorType.Crafted, DELAY_BAIT, itemFloatType);
+      } else if (state.Inventory.TryGetOneItem (itemTypeBait)) {
+        state.SetIndicator (NPCIndicatorType.Crafted, DELAY_BAIT, itemTypeFloat);
         process = PROCESS_STATE.BAITING;
         OverrideCooldown (DELAY_BAIT);
       } else {
@@ -148,15 +155,15 @@ namespace ScarabolMods
       state.JobIsDone = true;
       if (!ToSleep) {
         for (int c = 0; c < 5; c++) {
-          if (!usedNPC.Colony.UsedStockpile.TryGetOneItem (itemBaitType)) {
+          if (!usedNPC.Colony.UsedStockpile.TryGetOneItem (itemTypeBait)) {
             break;
           } else {
-            state.Inventory.Add (itemBaitType);
+            state.Inventory.Add (itemTypeBait);
             needsBait = false;
           }
         }
         if (needsBait) {
-          state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, itemBaitType);
+          state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, itemTypeBait);
           OverrideCooldown (8.0f);
         } else {
           OverrideCooldown (0.5f);
@@ -171,7 +178,7 @@ namespace ScarabolMods
       ushort actualType;
       for (int depth = 0; depth < 2; depth++) {
         Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
-        if (World.TryGetTypeAt (posFloat, out actualType) && actualType == ItemTypes.IndexLookup.GetIndex (FishersModEntries.MOD_PREFIX + "float")) {
+        if (World.TryGetTypeAt (posFloat, out actualType) && actualType == itemTypeFloat) {
           ServerManager.TryChangeBlock (posFloat, BlockTypes.Builtin.BuiltinBlocks.Air, ServerManager.SetBlockFlags.Default);
           break;
         }

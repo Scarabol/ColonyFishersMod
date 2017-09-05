@@ -18,22 +18,26 @@ namespace ScarabolMods
     public static string ROD_TYPE_KEY = MOD_PREFIX + "rod";
     public static string FLOAT_TYPE_KEY = MOD_PREFIX + "float";
     public static string BAIT_TYPE_KEY = MOD_PREFIX + "bait";
+    public static string FISH_TYPE_KEY = MOD_PREFIX + "fish";
     public static string COMPOST_TYPE_KEY = MOD_PREFIX + "compost";
+    public static string COMPOSTMAKER_TYPE_KEY = MOD_PREFIX + "compostmaker";
+    public static string COMPOST_PREFIX = COMPOST_TYPE_KEY + ".";
 
     public static List<Compostable> Compostables = new List<Compostable> () {
       new Compostable ("straw", 10),
       new Compostable ("leavestemperate", 7),
       new Compostable ("grasstemperate", 2),
       new Compostable ("dirt", 4),
-      new Compostable ("logtemperate", 3),
-      new Compostable ("logtaiga", 3),
+      new Compostable ("logtemperate", 4),
+      new Compostable ("logtaiga", 4),
       new Compostable ("leavestaiga", 7),
       new Compostable ("grasstaiga", 2),
       new Compostable ("grasstundra", 2),
       new Compostable ("grasssavanna", 2),
       new Compostable ("grassrainforest", 2),
       new Compostable ("berry", 8),
-      new Compostable ("flax", 3),
+      new Compostable ("flax", 6),
+      new Compostable ("flaxstage1", 2),
       new Compostable ("sappling", 2),
       new Compostable ("berrybush", 2),
       new Compostable ("cherrysapling", 2),
@@ -74,7 +78,7 @@ namespace ScarabolMods
     public static void AfterDefiningNPCTypes ()
     {
       BlockJobManagerTracker.Register<FisherJob> (ROD_TYPE_KEY);
-      BlockJobManagerTracker.Register<ComposterJob> (MOD_PREFIX + "compostmaker");
+      BlockJobManagerTracker.Register<ComposterJob> (COMPOSTMAKER_TYPE_KEY);
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterAddingBaseTypes, "scarabol.fishers.addrawtypes")]
@@ -119,7 +123,7 @@ namespace ScarabolMods
         .SetAs ("isPlaceable", false)
         .SetAs ("npcLimit", 0)
       );
-      ItemTypes.AddRawType (MOD_PREFIX + "fish", new JSONNode ()
+      ItemTypes.AddRawType (FISH_TYPE_KEY, new JSONNode ()
         .SetAs ("icon", Path.Combine (RelativeIconsPath, "fish.png"))
         .SetAs ("isPlaceable", false)
         .SetAs ("nutritionalValue", 4)
@@ -136,7 +140,7 @@ namespace ScarabolMods
         .SetAs ("emissive", "neutral")
         .SetAs ("height", "neutral")
       );
-      ItemTypes.AddRawType (MOD_PREFIX + "compostmaker", new JSONNode ()
+      ItemTypes.AddRawType (COMPOSTMAKER_TYPE_KEY, new JSONNode ()
         .SetAs ("onPlaceAudio", "dirtPlace")
         .SetAs ("onRemoveAudio", "grassDelete")
         .SetAs ("npcLimit", 0)
@@ -150,7 +154,7 @@ namespace ScarabolMods
         .SetAs ("isPlaceable", false)
       );
       foreach (Compostable Comp in Compostables) {
-        ItemTypes.AddRawType (COMPOST_TYPE_KEY + "." + Comp.TypeName, new JSONNode ()
+        ItemTypes.AddRawType (COMPOST_PREFIX + Comp.TypeName, new JSONNode ()
           .SetAs ("parentType", Comp.TypeName)
           .SetAs ("isPlaceable", false)
           .SetAs ("npcLimit", "2000000000")
@@ -167,12 +171,12 @@ namespace ScarabolMods
       compostMakerRecipe = new Recipe (new List<InventoryItem> () {
         new InventoryItem ("dirt", 1),
         new InventoryItem ("planks", 1)
-      }, new InventoryItem (MOD_PREFIX + "compostmaker", 1));
+      }, new InventoryItem (COMPOSTMAKER_TYPE_KEY, 1));
       RecipeManager.AddRecipes ("pipliz.crafter", new List<Recipe> (){ rodRecipe, compostMakerRecipe });
       List<Compostable> CompostablesLookup = new List<Compostable> ();
       foreach (Compostable Comp in Compostables) {
         if (ItemTypes.IndexLookup.TryGetIndex (Comp.TypeName, out Comp.Type) &&
-            ItemTypes.IndexLookup.TryGetIndex (COMPOST_TYPE_KEY + "." + Comp.TypeName, out Comp.CompostType)) {
+            ItemTypes.IndexLookup.TryGetIndex (COMPOST_PREFIX + Comp.TypeName, out Comp.CompostType)) {
           CompostablesLookup.Add (Comp);
         } else {
           Pipliz.Log.WriteError (string.Format ("Index lookup failed for compostable {0}", Comp.TypeName));

@@ -15,6 +15,8 @@ namespace ScarabolMods
   {
     private static float CompostValue = 0;
     private static bool ShouldTakeItems = false;
+    private static ushort itemTypeBait;
+    private static ushort itemTypeCompost;
 
     public override string NPCTypeKey { get { return "scarabol.composter"; } }
 
@@ -24,12 +26,16 @@ namespace ScarabolMods
 
     public ITrackableBlock InitializeOnAdd (Vector3Int position, ushort type, Players.Player player)
     {
+      itemTypeBait = ItemTypes.IndexLookup.GetIndex (FishersModEntries.BAIT_TYPE_KEY);
+      itemTypeCompost = ItemTypes.IndexLookup.GetIndex (FishersModEntries.COMPOST_TYPE_KEY);
       InitializeJob (player, position, 0);
       return this;
     }
 
     public override ITrackableBlock InitializeFromJSON (Players.Player player, JSONNode node)
     {
+      itemTypeBait = ItemTypes.IndexLookup.GetIndex (FishersModEntries.BAIT_TYPE_KEY);
+      itemTypeCompost = ItemTypes.IndexLookup.GetIndex (FishersModEntries.COMPOST_TYPE_KEY);
       InitializeJob (player, (Vector3Int)node ["position"], node.GetAs<int> ("npcID"));
       return this;
     }
@@ -50,17 +56,16 @@ namespace ScarabolMods
           }
         }
       }
-      ushort BaitType = ItemTypes.IndexLookup.GetIndex (FishersModEntries.BAIT_TYPE_KEY);
-      if (usedNPC.Colony.UsedStockpile.AmountContained (BaitType) >= RecipeLimits.GetLimit (owner, BaitType)) {
+      if (usedNPC.Colony.UsedStockpile.AmountContained (itemTypeBait) >= RecipeLimits.GetLimit (owner, itemTypeBait)) {
         state.SetIndicator (NPCIndicatorType.SuccessIdle, Pipliz.Random.NextFloat (TimeBetweenJobs, 2 * TimeBetweenJobs));
         state.JobIsDone = false;
-      } else if (state.Inventory.GetAmount (BaitType) >= 5) {
+      } else if (state.Inventory.GetAmount (itemTypeBait) >= 5) {
         ShouldTakeItems = true;
         OverrideCooldown (0.1);
       } else if (CompostValue >= 1) {
         CompostValue--;
-        state.Inventory.Add (new InventoryItem (BaitType, 1));
-        state.SetIndicator (NPCIndicatorType.Crafted, TimeBetweenJobs, BaitType);
+        state.Inventory.Add (itemTypeBait, 1);
+        state.SetIndicator (NPCIndicatorType.Crafted, TimeBetweenJobs, itemTypeBait);
         state.JobIsDone = false;
       } else {
         ShouldTakeItems = true;
@@ -75,8 +80,7 @@ namespace ScarabolMods
       if (ToSleep) {
         return;
       }
-      ushort GenericCompostType = ItemTypes.IndexLookup.GetIndex (FishersModEntries.COMPOST_TYPE_KEY);
-      if (usedNPC.Colony.UsedStockpile.AmountContained (GenericCompostType) >= RecipeLimits.GetLimit (owner, GenericCompostType) || CompostValue >= 1) {
+      if (usedNPC.Colony.UsedStockpile.AmountContained (itemTypeCompost) >= RecipeLimits.GetLimit (owner, itemTypeCompost) || CompostValue >= 1) {
         ShouldTakeItems = false;
         OverrideCooldown (0.1);
         return;
@@ -106,7 +110,7 @@ namespace ScarabolMods
         }
         OverrideCooldown (0.1);
       } else {
-        state.SetIndicator (NPCIndicatorType.MissingItem, TimeBetweenJobs, GenericCompostType);
+        state.SetIndicator (NPCIndicatorType.MissingItem, TimeBetweenJobs, itemTypeCompost);
         state.JobIsDone = false;
       }
     }
@@ -127,7 +131,7 @@ namespace ScarabolMods
 
     public virtual List<string> GetCraftingLimitsTriggers ()
     {
-      return new List<string> () { FishersModEntries.MOD_PREFIX + "compostmaker" };
+      return new List<string> () { FishersModEntries.COMPOSTMAKER_TYPE_KEY };
     }
 
     NPCTypeSettings INPCTypeDefiner.GetNPCTypeDefinition ()
