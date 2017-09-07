@@ -11,7 +11,7 @@ using NPC;
 
 namespace ScarabolMods
 {
-  public class FisherJob : BlockJobBase, IBlockJobBase, INPCTypeDefiner
+  public class FisherJob : BlockJobBase, IBlockJobBase, IRecipeLimitsProvider, INPCTypeDefiner
   {
     private static float DELAY_JOB = 20.0f;
     private static float DELAY_BAIT = 2.5f;
@@ -33,6 +33,7 @@ namespace ScarabolMods
     ushort itemTypeFish;
     PROCESS_STATE process;
     bool needsBait;
+    Recipe[] FishRecipes = null;
 
     public override string NPCTypeKey { get { return "scarabol.fisher"; } }
 
@@ -138,6 +139,9 @@ namespace ScarabolMods
         state.Inventory.Add (itemTypeFish);
         process = PROCESS_STATE.NONE;
         OverrideCooldown (0.5f);
+      } else if (Stockpile.GetStockPile (owner).AmountContained (itemTypeFish) >= RecipeLimits.GetLimit (owner, itemTypeFish)) {
+        state.SetIndicator (NPCIndicatorType.SuccessIdle, 8.0f, 0);
+        OverrideCooldown (8.0f);
       } else if (state.Inventory.TryGetOneItem (itemTypeBait)) {
         state.SetIndicator (NPCIndicatorType.Crafted, DELAY_BAIT, itemTypeFloat);
         process = PROCESS_STATE.BAITING;
@@ -184,6 +188,29 @@ namespace ScarabolMods
         }
       }
       base.OnRemove ();
+    }
+
+    public virtual string GetCraftingLimitsIdentifier ()
+    {
+      return this.NPCTypeKey;
+    }
+
+    public virtual Recipe[] GetCraftingLimitsRecipes ()
+    {
+      if (FishRecipes == null) {
+        FishRecipes = new Recipe[] { new Recipe (new InventoryItem (FishersModEntries.BAIT_TYPE_KEY, 1), new InventoryItem (FishersModEntries.FISH_TYPE_KEY, 1)) };
+      }
+      return FishRecipes;
+    }
+
+    public virtual List<string> GetCraftingLimitsTriggers ()
+    {
+      return new List<string> () {
+        FishersModEntries.ROD_TYPE_KEY + "x+",
+        FishersModEntries.ROD_TYPE_KEY + "x-",
+        FishersModEntries.ROD_TYPE_KEY + "z+",
+        FishersModEntries.ROD_TYPE_KEY + "z-"
+      };
     }
 
     NPCTypeSettings INPCTypeDefiner.GetNPCTypeDefinition ()
