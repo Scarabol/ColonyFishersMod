@@ -59,6 +59,50 @@ namespace ScarabolMods
     {
       AssetsDirectory = Path.Combine (Path.GetDirectoryName (path), "assets");
       ModLocalizationHelper.localize (Path.Combine (AssetsDirectory, "localization"), MOD_PREFIX, false);
+      Dictionary<string, string> prefixesCompost = new Dictionary<string, string> ();
+      string[] prefixFiles = Directory.GetFiles (Path.Combine (AssetsDirectory, "localization"), "prefixes.json", SearchOption.AllDirectories);
+      foreach (string filepath in prefixFiles) {
+        try {
+          JSONNode jsonPrefixes;
+          if (Pipliz.JSON.JSON.Deserialize (filepath, out jsonPrefixes, false)) {
+            string locName = Directory.GetParent (filepath).Name;
+            string compostPrefix;
+            if (jsonPrefixes.TryGetAs ("compost", out compostPrefix)) {
+              prefixesCompost [locName] = compostPrefix;
+            } else {
+              Pipliz.Log.Write ("Prefix key 'compost' not found in '{0}' file", locName);
+            }
+          }
+        } catch (Exception exception) {
+          Pipliz.Log.WriteError (string.Format ("Exception reading localization from {0}; {1}", filepath, exception.Message));
+        }
+      }
+      Dictionary<string, JSONNode> compostsLocalizations = new Dictionary<string, JSONNode> ();
+      foreach (Compostable compostable in Compostables) {
+        foreach (KeyValuePair<string, string> locPrefix in prefixesCompost) {
+          JSONNode locNode;
+          if (!compostsLocalizations.TryGetValue (locPrefix.Key, out locNode)) {
+            locNode = new JSONNode ();
+            compostsLocalizations.Add (locPrefix.Key, locNode);
+          }
+          string vanillaPath = MultiPath.Combine ("gamedata", "localization", locPrefix.Key, "types.json");
+          JSONNode jsonVanilla;
+          if (Pipliz.JSON.JSON.Deserialize (vanillaPath, out jsonVanilla, false)) {
+            string localizedTypename;
+            if (!jsonVanilla.TryGetAs (compostable.TypeName, out localizedTypename)) {
+              localizedTypename = compostable.TypeName;
+            }
+            locNode.SetAs (compostable.TypeName, string.Format ("{0} ({1})", locPrefix.Value, localizedTypename));
+          }
+        }
+      }
+      foreach (KeyValuePair<string, JSONNode> locEntry in compostsLocalizations) {
+        try {
+          ModLocalizationHelper.localize (locEntry.Key, "types.json", locEntry.Value, COMPOST_PREFIX, false);
+        } catch (Exception exception) {
+          Pipliz.Log.WriteError (string.Format ("Exception while localization of {0}; {1}", locEntry.Key, exception.Message));
+        }
+      }
       // TODO this is really hacky (maybe better in future ModAPI)
       RelativeTexturesPath = new Uri (MultiPath.Combine (Path.GetFullPath ("gamedata"), "textures", "materials", "blocks", "albedo", "dummyfile")).MakeRelativeUri (new Uri (Path.Combine (AssetsDirectory, "textures"))).OriginalString;
       RelativeIconsPath = new Uri (MultiPath.Combine (Path.GetFullPath ("gamedata"), "textures", "icons", "dummyfile")).MakeRelativeUri (new Uri (Path.Combine (AssetsDirectory, "icons"))).OriginalString;
