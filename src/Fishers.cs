@@ -130,13 +130,13 @@ namespace ScarabolMods
       );
       ItemTypesServer.AddTextureMapping (MOD_PREFIX + "compostMakerSide", new JSONNode ()
         .SetAs ("albedo", MultiPath.Combine (RelativeTexturesPath, "albedo", "compostMakerSide"))
-        .SetAs ("normal", "neutral")
+        .SetAs ("normal", MultiPath.Combine (RelativeTexturesPath, "normal", "compostMakerSide"))
         .SetAs ("emissive", "neutral")
         .SetAs ("height", "neutral")
       );
       ItemTypesServer.AddTextureMapping (MOD_PREFIX + "compostMakerTop", new JSONNode ()
         .SetAs ("albedo", MultiPath.Combine (RelativeTexturesPath, "albedo", "compostMakerTop"))
-        .SetAs ("normal", "neutral")
+        .SetAs ("normal", MultiPath.Combine (RelativeTexturesPath, "normal", "compostMakerTop"))
         .SetAs ("emissive", "neutral")
         .SetAs ("height", "neutral")
       );
