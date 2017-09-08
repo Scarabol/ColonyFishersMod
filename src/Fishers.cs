@@ -176,13 +176,13 @@ namespace ScarabolMods
         .SetAs ("albedo", MultiPath.Combine (RelativeTexturesPath, "albedo", "compostMakerSide"))
         .SetAs ("normal", MultiPath.Combine (RelativeTexturesPath, "normal", "compostMakerSide"))
         .SetAs ("emissive", "neutral")
-        .SetAs ("height", "neutral")
+        .SetAs ("height", MultiPath.Combine (RelativeTexturesPath, "heightSmoothnessSpecularity", "compostMakerSide"))
       );
       ItemTypesServer.AddTextureMapping (MOD_PREFIX + "compostMakerTop", new JSONNode ()
         .SetAs ("albedo", MultiPath.Combine (RelativeTexturesPath, "albedo", "compostMakerTop"))
         .SetAs ("normal", MultiPath.Combine (RelativeTexturesPath, "normal", "compostMakerTop"))
         .SetAs ("emissive", "neutral")
-        .SetAs ("height", "neutral")
+        .SetAs ("height", MultiPath.Combine (RelativeTexturesPath, "heightSmoothnessSpecularity", "compostMakerTop"))
       );
       ItemTypes.AddRawType (COMPOSTMAKER_TYPE_KEY, new JSONNode ()
         .SetAs ("onPlaceAudio", "dirtPlace")
