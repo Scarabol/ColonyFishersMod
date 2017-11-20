@@ -95,7 +95,7 @@ namespace ScarabolMods
         }
       }
       if (MostlyType != BuiltinBlocks.Air) {
-        while (!state.Inventory.Full && usedNPC.Colony.UsedStockpile.TryRemove (MostlyType, 1) &&
+        while (state.Inventory.UsedCapacity < 50 && usedNPC.Colony.UsedStockpile.TryRemove (MostlyType, 1) &&
                usedNPC.Colony.UsedStockpile.AmountContained (MostlyType) > MostlyLimit) {
           shouldTakeItems = false;
           state.Inventory.Add (MostlyType, 1);
