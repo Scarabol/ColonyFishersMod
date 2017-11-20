@@ -1,6 +1,6 @@
 # important variables
 modname = Fishers
-version = 1.4
+version = 2.0
 
 moddir = Scarabol/$(modname)
 zipname = Colony$(modname)Mod-$(version)-mods.zip
