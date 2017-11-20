@@ -5,9 +5,10 @@ using Pipliz;
 using Pipliz.Chatting;
 using Pipliz.JSON;
 using Pipliz.Threading;
-using Pipliz.APIProvider.Recipes;
 using Pipliz.APIProvider.Jobs;
 using NPC;
+using Server.NPCs;
+using BlockTypes.Builtin;
 
 namespace ScarabolMods
 {
@@ -33,12 +34,8 @@ namespace ScarabolMods
     ushort itemTypeFish;
     PROCESS_STATE process;
     bool needsBait;
-    Recipe[] FishRecipes = null;
 
     public override string NPCTypeKey { get { return "scarabol.fisher"; } }
-
-    // not used actually
-    public override float TimeBetweenJobs { get { return DELAY_JOB; } }
 
     public override bool NeedsItems { get { return (needsBait); } }
 
@@ -78,7 +75,7 @@ namespace ScarabolMods
         .SetAs ("needsBait", needsBait);
     }
 
-    public override void OnNPCDoJob (ref NPCBase.NPCState state)
+    public override void OnNPCAtJob (ref NPCBase.NPCState state)
     {
       usedNPC.LookAt ((position + jobdirvec * 3).Vector);
       ushort actualType;
@@ -87,7 +84,7 @@ namespace ScarabolMods
         for (int x = -2; x <= 2; x++) {
           for (int z = 3 - 2; z <= 3 + 2; z++) {
             Vector3Int combinedVec = position + new Vector3Int (-jobdirvec.z * x + jobdirvec.x * z, -depth, jobdirvec.x * x + jobdirvec.z * z);
-            if (World.TryGetTypeAt (combinedVec, out actualType) && actualType == BlockTypes.Builtin.BuiltinBlocks.Water) {
+            if (World.TryGetTypeAt (combinedVec, out actualType) && actualType == BuiltinBlocks.Water) {
               waterBlocks++;
               if (waterBlocks >= 9) {
                 break;
@@ -97,35 +94,35 @@ namespace ScarabolMods
         }
       }
       if (waterBlocks < 9) {
-        state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, BlockTypes.Builtin.BuiltinBlocks.Water);
-        OverrideCooldown (4.0f);
+        state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, BuiltinBlocks.Water);
+        state.SetCooldown (4.0f);
       } else if (process == PROCESS_STATE.BAITING) {
         bool placedFloat = false;
         for (int depth = 0; depth < 2; depth++) {
           Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
-          if (World.TryGetTypeAt (posFloat, out actualType) && actualType == BlockTypes.Builtin.BuiltinBlocks.Air &&
-              World.TryGetTypeAt (posFloat + Vector3Int.down, out actualType) && actualType == BlockTypes.Builtin.BuiltinBlocks.Water) {
+          if (World.TryGetTypeAt (posFloat, out actualType) && actualType == BuiltinBlocks.Air &&
+              World.TryGetTypeAt (posFloat + Vector3Int.down, out actualType) && actualType == BuiltinBlocks.Water) {
             ServerManager.TryChangeBlock (posFloat, itemTypeFloat, ServerManager.SetBlockFlags.DefaultAudio);
             process = PROCESS_STATE.FISHING;
-            OverrideCooldown (DELAY_FISH);
+            state.SetCooldown (DELAY_FISH);
             placedFloat = true;
             break;
           }
         }
         if (!placedFloat) {
           state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, itemTypeFloat);
-          OverrideCooldown (8.0f);
+          state.SetCooldown (8.0f);
         }
       } else if (process == PROCESS_STATE.FISHING) {
         bool foundFloat = false;
         for (int depth = 0; depth < 2; depth++) {
           Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
           if (World.TryGetTypeAt (posFloat, out actualType) && actualType == itemTypeFloat) {
-            ServerManager.TryChangeBlock (posFloat, BlockTypes.Builtin.BuiltinBlocks.Air, ServerManager.SetBlockFlags.Default);
+            ServerManager.TryChangeBlock (posFloat, BuiltinBlocks.Air, ServerManager.SetBlockFlags.Default);
             state.SetIndicator (NPCIndicatorType.Crafted, DELAY_PULL, itemTypeFish);
             ServerManager.SendAudio (position.Vector, FishersModEntries.MOD_PREFIX + "fishing");
             process = PROCESS_STATE.PULLING;
-            OverrideCooldown (DELAY_PULL);
+            state.SetCooldown (DELAY_PULL);
             foundFloat = true;
             break;
           }
@@ -133,33 +130,33 @@ namespace ScarabolMods
         if (!foundFloat) {
           Chat.Send (owner, string.Format ("Sam here from {0}, someone stole my fish!", position));
           process = PROCESS_STATE.NONE;
-          OverrideCooldown (0.5f);
+          state.SetCooldown (0.5f);
         }
       } else if (process == PROCESS_STATE.PULLING) {
         state.Inventory.Add (itemTypeFish);
         process = PROCESS_STATE.NONE;
-        OverrideCooldown (0.5f);
-      } else if (Stockpile.GetStockPile (owner).AmountContained (itemTypeFish) >= RecipeLimits.GetLimit (owner, itemTypeFish)) {
+        state.SetCooldown (0.5f);
+      } else if (Stockpile.GetStockPile (owner).AmountContained (itemTypeFish) >= RecipeStorage.GetPlayerStorage (owner).GetRecipeSetting (FishersModEntries.FISH_TYPE_KEY + ".recipe").Limit) {
         state.SetIndicator (NPCIndicatorType.SuccessIdle, 8.0f, 0);
-        OverrideCooldown (8.0f);
+        state.SetCooldown (8.0f);
       } else if (state.Inventory.TryGetOneItem (itemTypeBait)) {
         state.SetIndicator (NPCIndicatorType.Crafted, DELAY_BAIT, itemTypeFloat);
         process = PROCESS_STATE.BAITING;
-        OverrideCooldown (DELAY_BAIT);
+        state.SetCooldown (DELAY_BAIT);
       } else {
         state.JobIsDone = true;
         needsBait = true;
-        OverrideCooldown (0.5f);
+        state.SetCooldown (0.5f);
       }
     }
 
-    public override void OnNPCDoStockpile (ref NPCBase.NPCState state)
+    public override void OnNPCAtStockpile (ref NPCBase.NPCState state)
     {
       state.Inventory.TryDump (usedNPC.Colony.UsedStockpile);
       state.JobIsDone = true;
       if (!ToSleep) {
         for (int c = 0; c < 5; c++) {
-          if (!usedNPC.Colony.UsedStockpile.TryGetOneItem (itemTypeBait)) {
+          if (!usedNPC.Colony.UsedStockpile.TryRemove (itemTypeBait)) {
             break;
           } else {
             state.Inventory.Add (itemTypeBait);
@@ -168,12 +165,12 @@ namespace ScarabolMods
         }
         if (needsBait) {
           state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, itemTypeBait);
-          OverrideCooldown (8.0f);
+          state.SetCooldown (8.0f);
         } else {
-          OverrideCooldown (0.5f);
+          state.SetCooldown (0.5f);
         }
       } else {
-        OverrideCooldown (0.5f);
+        state.SetCooldown (0.5f);
       }
     }
 
@@ -183,24 +180,25 @@ namespace ScarabolMods
       for (int depth = 0; depth < 2; depth++) {
         Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
         if (World.TryGetTypeAt (posFloat, out actualType) && actualType == itemTypeFloat) {
-          ServerManager.TryChangeBlock (posFloat, BlockTypes.Builtin.BuiltinBlocks.Air, ServerManager.SetBlockFlags.Default);
+          ServerManager.TryChangeBlock (posFloat, BuiltinBlocks.Air, ServerManager.SetBlockFlags.Default);
           break;
         }
       }
       base.OnRemove ();
     }
 
-    public virtual string GetCraftingLimitsIdentifier ()
+    public virtual string GetCraftingLimitsType ()
     {
       return this.NPCTypeKey;
     }
 
-    public virtual Recipe[] GetCraftingLimitsRecipes ()
+    public virtual IList<Recipe> GetCraftingLimitsRecipes ()
     {
-      if (FishRecipes == null) {
-        FishRecipes = new Recipe[] { new Recipe (new InventoryItem (FishersModEntries.BAIT_TYPE_KEY, 1), new InventoryItem (FishersModEntries.FISH_TYPE_KEY, 1)) };
-      }
-      return FishRecipes;
+      return new List<Recipe> { new Recipe (FishersModEntries.FISH_TYPE_KEY + ".recipe",
+          new InventoryItem (FishersModEntries.BAIT_TYPE_KEY, 1),
+          new InventoryItem (FishersModEntries.FISH_TYPE_KEY, 1)
+        )
+      };
     }
 
     public virtual List<string> GetCraftingLimitsTriggers ()
@@ -213,14 +211,14 @@ namespace ScarabolMods
       };
     }
 
-    NPCTypeSettings INPCTypeDefiner.GetNPCTypeDefinition ()
+    NPCTypeStandardSettings INPCTypeDefiner.GetNPCTypeDefinition ()
     {
-      NPCTypeSettings def = NPCTypeSettings.Default;
-      def.keyName = NPCTypeKey;
-      def.printName = "Fisher";
-      def.maskColor1 = new UnityEngine.Color32 (110, 200, 255, 255);
-      def.type = NPCTypeID.GetNextID ();
-      return def;
+      return new NPCTypeStandardSettings () {
+        keyName = NPCTypeKey,
+        printName = "Fisher",
+        maskColor1 = new UnityEngine.Color32 (110, 200, 255, 255),
+        type = NPCTypeID.GetNextID ()
+      };
     }
   }
 }

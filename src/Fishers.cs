@@ -5,9 +5,9 @@ using Pipliz;
 using Pipliz.Chatting;
 using Pipliz.JSON;
 using Pipliz.Threading;
-using Pipliz.APIProvider.Recipes;
 using Pipliz.APIProvider.Jobs;
 using NPC;
+using BlockTypes.Builtin;
 
 namespace ScarabolMods
 {
@@ -47,10 +47,6 @@ namespace ScarabolMods
     };
 
     private static string AssetsDirectory;
-    private static string RelativeTexturesPath;
-    private static string RelativeIconsPath;
-    private static string RelativeMeshesPath;
-    private static string RelativeAudioPath;
     private static Recipe rodRecipe;
     private static Recipe compostMakerRecipe;
 
@@ -103,12 +99,6 @@ namespace ScarabolMods
           Pipliz.Log.WriteError (string.Format ("Exception while localization of {0}; {1}", locEntry.Key, exception.Message));
         }
       }
-      // TODO this is really hacky (maybe better in future ModAPI)
-      RelativeTexturesPath = new Uri (MultiPath.Combine (Path.GetFullPath ("gamedata"), "textures", "materials", "blocks", "albedo", "dummyfile")).MakeRelativeUri (new Uri (Path.Combine (AssetsDirectory, "textures"))).OriginalString;
-      RelativeIconsPath = new Uri (MultiPath.Combine (Path.GetFullPath ("gamedata"), "textures", "icons", "dummyfile")).MakeRelativeUri (new Uri (Path.Combine (AssetsDirectory, "icons"))).OriginalString;
-      RelativeMeshesPath = new Uri (MultiPath.Combine (Path.GetFullPath ("gamedata"), "meshes", "dummyfile")).MakeRelativeUri (new Uri (Path.Combine (AssetsDirectory, "meshes"))).OriginalString;
-      RelativeAudioPath = new Uri (MultiPath.Combine (Path.GetFullPath ("gamedata"), "audio", "dummyfile")).MakeRelativeUri (new Uri (Path.Combine (AssetsDirectory, "audio"))).OriginalString;
-      ModAudioHelper.IntegrateAudio (Path.Combine (AssetsDirectory, "audio"), MOD_PREFIX, RelativeAudioPath);
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterStartup, "scarabol.fishers.registercallbacks")]
@@ -117,106 +107,89 @@ namespace ScarabolMods
       Pipliz.Log.Write ("Loaded Fishers Mod 2.0 by Scarabol");
     }
 
-    [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterDefiningNPCTypes, "scarabol.fishers.registerjobs")]
+    [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterItemTypesDefined, "scarabol.fishers.registerjobs")]
     [ModLoader.ModCallbackProvidesFor ("pipliz.apiprovider.jobs.resolvetypes")]
-    public static void AfterDefiningNPCTypes ()
+    public static void RegisterJobs ()
     {
       BlockJobManagerTracker.Register<FisherJob> (ROD_TYPE_KEY);
       BlockJobManagerTracker.Register<ComposterJob> (COMPOSTMAKER_TYPE_KEY);
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterAddingBaseTypes, "scarabol.fishers.addrawtypes")]
-    public static void AfterAddingBaseTypes ()
+    public static void AfterAddingBaseTypes (Dictionary<string, ItemTypesServer.ItemTypeRaw> itemTypes)
     {
-      ItemTypes.AddRawType (ROD_TYPE_KEY, new JSONNode ()
+      itemTypes.Add (ROD_TYPE_KEY, new ItemTypesServer.ItemTypeRaw (ROD_TYPE_KEY, new JSONNode ()
         .SetAs ("onPlaceAudio", "woodPlace")
         .SetAs ("onRemoveAudio", "woodDeleteLight")
         .SetAs ("needsBase", true)
         .SetAs ("isSolid", false)
         .SetAs ("npcLimit", 0)
-        .SetAs ("icon", Path.Combine (RelativeIconsPath, "rod.png"))
+        .SetAs ("icon", MultiPath.Combine (AssetsDirectory, "icons", "rod.png"))
         .SetAs ("sideall", "blackplanks")
         .SetAs ("isRotatable", true)
         .SetAs ("rotatablex+", ROD_TYPE_KEY + "x+")
         .SetAs ("rotatablex-", ROD_TYPE_KEY + "x-")
         .SetAs ("rotatablez+", ROD_TYPE_KEY + "z+")
         .SetAs ("rotatablez-", ROD_TYPE_KEY + "z-")
-      );
+      ));
       foreach (string xz in new string[] { "x+", "x-", "z+", "z-" }) {
-        ItemTypes.AddRawType (ROD_TYPE_KEY + xz, new JSONNode ()
+        itemTypes.Add (ROD_TYPE_KEY + xz, new ItemTypesServer.ItemTypeRaw (ROD_TYPE_KEY + xz, new JSONNode ()
           .SetAs ("parentType", ROD_TYPE_KEY)
-          .SetAs ("mesh", Path.Combine (RelativeMeshesPath, "rod" + xz + ".obj"))
-        );
+          .SetAs ("mesh", MultiPath.Combine (AssetsDirectory, "meshes", "rod" + xz + ".obj"))
+        ));
       }
-      ItemTypesServer.AddTextureMapping (FLOAT_TYPE_KEY, new JSONNode ()
-        .SetAs ("albedo", MultiPath.Combine (RelativeTexturesPath, "albedo", "float"))
-        .SetAs ("normal", "neutral")
-        .SetAs ("emissive", "neutral")
-        .SetAs ("height", "neutral")
-      );
-      ItemTypes.AddRawType (FLOAT_TYPE_KEY, new JSONNode ()
+      itemTypes.Add (FLOAT_TYPE_KEY, new ItemTypesServer.ItemTypeRaw (FLOAT_TYPE_KEY, new JSONNode ()
         .SetAs ("onPlaceAudio", MOD_PREFIX + "waterSplashSoft")
-        .SetAs ("icon", Path.Combine (RelativeIconsPath, "float.png"))
+        .SetAs ("icon", MultiPath.Combine (AssetsDirectory, "icons", "float.png"))
         .SetAs ("isSolid", false)
         .SetAs ("sideall", "SELF")
-        .SetAs ("mesh", Path.Combine (RelativeMeshesPath, "float.obj"))
+        .SetAs ("mesh", MultiPath.Combine (AssetsDirectory, "meshes", "float.obj"))
         .SetAs ("onRemove", new JSONNode (NodeType.Array))
-      );
-      ItemTypes.AddRawType (BAIT_TYPE_KEY, new JSONNode ()
-        .SetAs ("icon", Path.Combine (RelativeIconsPath, "bait.png"))
+      ));
+      itemTypes.Add (BAIT_TYPE_KEY, new ItemTypesServer.ItemTypeRaw (BAIT_TYPE_KEY, new JSONNode ()
+        .SetAs ("icon", MultiPath.Combine (AssetsDirectory, "icons", "bait.png"))
         .SetAs ("isPlaceable", false)
         .SetAs ("npcLimit", 0)
-      );
-      ItemTypes.AddRawType (FISH_TYPE_KEY, new JSONNode ()
-        .SetAs ("icon", Path.Combine (RelativeIconsPath, "fish.png"))
+      ));
+      itemTypes.Add (FISH_TYPE_KEY, new ItemTypesServer.ItemTypeRaw (FISH_TYPE_KEY, new JSONNode ()
+        .SetAs ("icon", MultiPath.Combine (AssetsDirectory, "icons", "fish.png"))
         .SetAs ("isPlaceable", false)
         .SetAs ("nutritionalValue", 4)
-      );
-      ItemTypesServer.AddTextureMapping (MOD_PREFIX + "compostMakerSide", new JSONNode ()
-        .SetAs ("albedo", MultiPath.Combine (RelativeTexturesPath, "albedo", "compostMakerSide"))
-        .SetAs ("normal", MultiPath.Combine (RelativeTexturesPath, "normal", "compostMakerSide"))
-        .SetAs ("emissive", "neutral")
-        .SetAs ("height", MultiPath.Combine (RelativeTexturesPath, "heightSmoothnessSpecularity", "compostMakerSide"))
-      );
-      ItemTypesServer.AddTextureMapping (MOD_PREFIX + "compostMakerTop", new JSONNode ()
-        .SetAs ("albedo", MultiPath.Combine (RelativeTexturesPath, "albedo", "compostMakerTop"))
-        .SetAs ("normal", MultiPath.Combine (RelativeTexturesPath, "normal", "compostMakerTop"))
-        .SetAs ("emissive", "neutral")
-        .SetAs ("height", MultiPath.Combine (RelativeTexturesPath, "heightSmoothnessSpecularity", "compostMakerTop"))
-      );
-      ItemTypes.AddRawType (COMPOSTMAKER_TYPE_KEY, new JSONNode ()
+      ));
+      itemTypes.Add (COMPOSTMAKER_TYPE_KEY, new ItemTypesServer.ItemTypeRaw (COMPOSTMAKER_TYPE_KEY, new JSONNode ()
         .SetAs ("onPlaceAudio", "dirtPlace")
         .SetAs ("onRemoveAudio", "grassDelete")
         .SetAs ("npcLimit", 0)
-        .SetAs ("icon", Path.Combine (RelativeIconsPath, "compostMaker.png"))
+        .SetAs ("icon", MultiPath.Combine (AssetsDirectory, "icons", "compostMaker.png"))
         .SetAs ("sideall", MOD_PREFIX + "compostMakerSide")
         .SetAs ("sidey+", MOD_PREFIX + "compostMakerTop")
         .SetAs ("sidey-", "dirt")
-      );
-      ItemTypes.AddRawType (COMPOST_TYPE_KEY, new JSONNode ()
-        .SetAs ("icon", Path.Combine (RelativeIconsPath, "compost.png"))
+      ));
+      itemTypes.Add (COMPOST_TYPE_KEY, new ItemTypesServer.ItemTypeRaw (COMPOST_TYPE_KEY, new JSONNode ()
+        .SetAs ("icon", MultiPath.Combine (AssetsDirectory, "icons", "compost.png"))
         .SetAs ("isPlaceable", false)
-      );
+      ));
       foreach (Compostable Comp in Compostables) {
-        ItemTypes.AddRawType (COMPOST_PREFIX + Comp.TypeName, new JSONNode ()
+        itemTypes.Add (COMPOST_PREFIX + Comp.TypeName, new ItemTypesServer.ItemTypeRaw (COMPOST_PREFIX + Comp.TypeName, new JSONNode ()
           .SetAs ("parentType", Comp.TypeName)
           .SetAs ("isPlaceable", false)
           .SetAs ("npcLimit", "2000000000")
-        );
+        ));
       }
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterItemTypesDefined, "scarabol.fishers.loadrecipes")]
-    [ModLoader.ModCallbackDependsOn ("pipliz.blocknpcs.loadrecipes")]
-    [ModLoader.ModCallbackProvidesFor ("pipliz.apiprovider.registerrecipes")]
-    public static void AfterItemTypesDefined ()
+    [ModLoader.ModCallbackDependsOn ("pipliz.server.loadresearchables")]
+    [ModLoader.ModCallbackProvidesFor ("pipliz.server.loadsortorder")]
+    public static void LoadRecipes ()
     {
-      rodRecipe = new Recipe (new InventoryItem ("blackplanks", 2), new InventoryItem (ROD_TYPE_KEY, 1));
-      compostMakerRecipe = new Recipe (new List<InventoryItem> () {
-        new InventoryItem ("dirt", 1),
-        new InventoryItem ("planks", 1)
+      rodRecipe = new Recipe (ROD_TYPE_KEY + ".recipe", new InventoryItem (BuiltinBlocks.BlackPlanks, 2), new InventoryItem (ROD_TYPE_KEY, 1));
+      compostMakerRecipe = new Recipe (COMPOSTMAKER_TYPE_KEY + ".recipe", new List<InventoryItem> () {
+        new InventoryItem (BuiltinBlocks.Dirt, 1),
+        new InventoryItem (BuiltinBlocks.Planks, 1)
       }, new InventoryItem (COMPOSTMAKER_TYPE_KEY, 1));
-      RecipeManager.AddRecipes ("pipliz.crafter", new List<Recipe> (){ rodRecipe, compostMakerRecipe });
+      RecipeStorage.AddDefaultLimitTypeRecipe ("pipliz.crafter", rodRecipe);
+      RecipeStorage.AddDefaultLimitTypeRecipe ("pipliz.crafter", compostMakerRecipe);
       List<Compostable> CompostablesLookup = new List<Compostable> ();
       foreach (Compostable Comp in Compostables) {
         if (ItemTypes.IndexLookup.TryGetIndex (Comp.TypeName, out Comp.Type) &&
@@ -227,20 +200,33 @@ namespace ScarabolMods
         }
       }
       Compostables = CompostablesLookup;
-      List<Recipe> compostRecipes = new List<Recipe> ();
-      compostRecipes.Add (new Recipe (new InventoryItem (COMPOST_TYPE_KEY, 1), new InventoryItem (BAIT_TYPE_KEY, 1)));
+      RecipeStorage.AddDefaultLimitTypeRecipe ("scarabol.composter", new Recipe (BAIT_TYPE_KEY + ".recipe", new InventoryItem (COMPOST_TYPE_KEY, 1), new InventoryItem (BAIT_TYPE_KEY, 1)));
       foreach (Compostable Comp in Compostables) {
-        compostRecipes.Add (new Recipe (new InventoryItem (Comp.Type, Comp.Value), new InventoryItem (Comp.CompostType, 1)));
+        RecipeStorage.AddDefaultLimitTypeRecipe ("scarabol.composter", new Recipe (Comp.TypeName + ".recipe", new InventoryItem (Comp.Type, Comp.Value), new InventoryItem (Comp.CompostType, 1)));
       }
-      RecipeManager.AddRecipes ("scarabol.composter", compostRecipes);
+      RecipePlayer.AddDefaultRecipe (rodRecipe);
+      RecipePlayer.AddDefaultRecipe (compostMakerRecipe);
     }
 
-    [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterWorldLoad, "scarabol.fishers.addplayercrafts")]
-    public static void AfterWorldLoad ()
+    [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterSelectedWorld, "scarabol.fishers.registertexturemappings")]
+    [ModLoader.ModCallbackProvidesFor ("pipliz.server.registertexturemappingtextures")]
+    public static void AfterSelectedWorld ()
     {
-      // add recipes here, otherwise they're inserted before vanilla recipes in player crafts
-      RecipePlayer.AllRecipes.Add (rodRecipe);
-      RecipePlayer.AllRecipes.Add (compostMakerRecipe);
+      ItemTypesServer.SetTextureMapping (FLOAT_TYPE_KEY, new ItemTypesServer.TextureMapping (
+        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "albedo", "float.png")
+      ));
+      ItemTypesServer.SetTextureMapping (MOD_PREFIX + "compostMakerSide", new ItemTypesServer.TextureMapping (
+        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "albedo", "compostMakerSide.png"),
+        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "normal", "compostMakerSide.png"),
+        null,
+        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "heightSmoothnessSpecularity", "compostMakerSide.png")
+      ));
+      ItemTypesServer.SetTextureMapping (MOD_PREFIX + "compostMakerTop", new ItemTypesServer.TextureMapping (
+        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "albedo", "compostMakerTop.png"),
+        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "normal", "compostMakerTop.png"),
+        null,
+        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "heightSmoothnessSpecularity", "compostMakerTop.png")
+      ));
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.OnTryChangeBlockUser, "scarabol.fishers.trychangeblock")]
