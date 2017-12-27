@@ -1,6 +1,6 @@
 # important variables
 modname = Fishers
-version = 2.0
+version = 3.0
 
 moddir = Scarabol/$(modname)
 zipname = Colony$(modname)Mod-$(version)-mods.zip
@@ -21,6 +21,10 @@ all: clean default
 release: default
 	rm -f "$(zipname)"
 	cd ../../ && zip -r "$(moddir)/$(zipname)" "$(moddir)/modInfo.json" "$(moddir)/$(dllname)" "$(moddir)/assets/"
+
+publish: release
+	git push
+	git tag "$(version)" && git push --tags
 
 client: default
 	cd ../../../../ && ./colonyclient.x86_64
