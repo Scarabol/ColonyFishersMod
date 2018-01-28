@@ -104,7 +104,7 @@ namespace ScarabolMods
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterStartup, "scarabol.fishers.registercallbacks")]
     public static void AfterStartup ()
     {
-      Pipliz.Log.Write ("Loaded Fishers Mod 3.0 by Scarabol");
+      Pipliz.Log.Write ("Loaded Fishers Mod 3.1.0 by Scarabol");
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterItemTypesDefined, "scarabol.fishers.registerjobs")]
