@@ -52,7 +52,7 @@ namespace ScarabolMods
         }
       }
       if (usedNPC.Colony.UsedStockpile.AmountContained (itemTypeBait) >= RecipeStorage.GetPlayerStorage (owner).GetRecipeSetting (FishersModEntries.BAIT_TYPE_KEY + ".recipe").Limit) {
-        state.SetIndicator (NPCIndicatorType.SuccessIdle, Pipliz.Random.NextFloat (CraftingCooldown, 2 * CraftingCooldown));
+        state.SetIndicator (new Shared.IndicatorState (Pipliz.Random.NextFloat (CraftingCooldown, 2 * CraftingCooldown), NPCIndicatorType.None));
         state.JobIsDone = false;
       } else if (state.Inventory.GetAmount (itemTypeBait) >= 5) {
         shouldTakeItems = true;
@@ -60,7 +60,7 @@ namespace ScarabolMods
       } else if (CompostValue >= 1) {
         CompostValue--;
         state.Inventory.Add (itemTypeBait, 1);
-        state.SetIndicator (NPCIndicatorType.Crafted, CraftingCooldown, itemTypeBait);
+        state.SetIndicator (new Shared.IndicatorState (CraftingCooldown, itemTypeBait));
         state.JobIsDone = false;
       } else {
         shouldTakeItems = true;
@@ -105,7 +105,7 @@ namespace ScarabolMods
         }
         state.SetCooldown (0.1);
       } else {
-        state.SetIndicator (NPCIndicatorType.MissingItem, CraftingCooldown, itemTypeCompost);
+        state.SetIndicator (new Shared.IndicatorState (CraftingCooldown, itemTypeCompost, true, false));
         state.JobIsDone = false;
       }
     }

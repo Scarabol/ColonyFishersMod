@@ -5,7 +5,7 @@
     "dllpath" : "Fishers.dll",
     "enabled" : true,
     "compatibleversions" : [
-      "0.5.0"
+      "0.5.3"
     ]
   }
 ]

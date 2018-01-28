@@ -94,7 +94,7 @@ namespace ScarabolMods
         }
       }
       if (waterBlocks < 9) {
-        state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, BuiltinBlocks.Water);
+        state.SetIndicator (new Shared.IndicatorState (8.0f, BuiltinBlocks.Water, true, false));
         state.SetCooldown (4.0f);
       } else if (process == PROCESS_STATE.BAITING) {
         bool placedFloat = false;
@@ -110,7 +110,7 @@ namespace ScarabolMods
           }
         }
         if (!placedFloat) {
-          state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, itemTypeFloat);
+          state.SetIndicator (new Shared.IndicatorState (8.0f, itemTypeFloat, true, false));
           state.SetCooldown (8.0f);
         }
       } else if (process == PROCESS_STATE.FISHING) {
@@ -119,7 +119,7 @@ namespace ScarabolMods
           Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
           if (World.TryGetTypeAt (posFloat, out actualType) && actualType == itemTypeFloat) {
             ServerManager.TryChangeBlock (posFloat, BuiltinBlocks.Air, ServerManager.SetBlockFlags.Default);
-            state.SetIndicator (NPCIndicatorType.Crafted, DELAY_PULL, itemTypeFish);
+            state.SetIndicator (new Shared.IndicatorState (DELAY_PULL, itemTypeFish));
             ServerManager.SendAudio (position.Vector, FishersModEntries.MOD_PREFIX + "fishing");
             process = PROCESS_STATE.PULLING;
             state.SetCooldown (DELAY_PULL);
@@ -137,10 +137,10 @@ namespace ScarabolMods
         process = PROCESS_STATE.NONE;
         state.SetCooldown (0.5f);
       } else if (Stockpile.GetStockPile (owner).AmountContained (itemTypeFish) >= RecipeStorage.GetPlayerStorage (owner).GetRecipeSetting (FishersModEntries.FISH_TYPE_KEY + ".recipe").Limit) {
-        state.SetIndicator (NPCIndicatorType.SuccessIdle, 8.0f, 0);
+        state.SetIndicator (new Shared.IndicatorState (8.0f, NPCIndicatorType.None));
         state.SetCooldown (8.0f);
       } else if (state.Inventory.TryGetOneItem (itemTypeBait)) {
-        state.SetIndicator (NPCIndicatorType.Crafted, DELAY_BAIT, itemTypeFloat);
+        state.SetIndicator (new Shared.IndicatorState (DELAY_BAIT, itemTypeFloat));
         process = PROCESS_STATE.BAITING;
         state.SetCooldown (DELAY_BAIT);
       } else {
@@ -164,7 +164,7 @@ namespace ScarabolMods
           }
         }
         if (needsBait) {
-          state.SetIndicator (NPCIndicatorType.MissingItem, 8.0f, itemTypeBait);
+          state.SetIndicator (new Shared.IndicatorState (8.0f, itemTypeBait, true, false));
           state.SetCooldown (8.0f);
         } else {
           state.SetCooldown (0.5f);
