@@ -183,11 +183,11 @@ namespace ScarabolMods
     [ModLoader.ModCallbackProvidesFor ("pipliz.server.loadsortorder")]
     public static void LoadRecipes ()
     {
-      rodRecipe = new Recipe (ROD_TYPE_KEY + ".recipe", new InventoryItem (BuiltinBlocks.BlackPlanks, 2), new InventoryItem (ROD_TYPE_KEY, 1));
+      rodRecipe = new Recipe (ROD_TYPE_KEY + ".recipe", new InventoryItem (BuiltinBlocks.BlackPlanks, 2), new InventoryItem (ROD_TYPE_KEY, 1), 0);
       compostMakerRecipe = new Recipe (COMPOSTMAKER_TYPE_KEY + ".recipe", new List<InventoryItem> () {
         new InventoryItem (BuiltinBlocks.Dirt, 1),
         new InventoryItem (BuiltinBlocks.Planks, 1)
-      }, new InventoryItem (COMPOSTMAKER_TYPE_KEY, 1));
+      }, new InventoryItem (COMPOSTMAKER_TYPE_KEY, 1), 0);
       RecipeStorage.AddDefaultLimitTypeRecipe ("pipliz.crafter", rodRecipe);
       RecipeStorage.AddDefaultLimitTypeRecipe ("pipliz.crafter", compostMakerRecipe);
       List<Compostable> CompostablesLookup = new List<Compostable> ();
