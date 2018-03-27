@@ -2,11 +2,8 @@
 using System.IO;
 using System.Collections.Generic;
 using Pipliz;
-using Pipliz.Chatting;
 using Pipliz.JSON;
-using Pipliz.Threading;
 using Pipliz.Mods.APIProvider.Jobs;
-using NPC;
 using BlockTypes.Builtin;
 
 namespace ScarabolMods
@@ -23,7 +20,7 @@ namespace ScarabolMods
     public static string COMPOSTMAKER_TYPE_KEY = MOD_PREFIX + "compostmaker";
     public static string COMPOST_PREFIX = COMPOST_TYPE_KEY + ".";
 
-    public static List<Compostable> Compostables = new List<Compostable> () {
+    public static List<Compostable> Compostables = new List<Compostable>  {
       new Compostable ("straw", 10),
       new Compostable ("leavestemperate", 7),
       new Compostable ("grasstemperate", 2),
@@ -46,9 +43,9 @@ namespace ScarabolMods
       new Compostable ("wheat", 6)
     };
 
-    private static string AssetsDirectory;
-    private static Recipe rodRecipe;
-    private static Recipe compostMakerRecipe;
+    static string AssetsDirectory;
+    static Recipe rodRecipe;
+    static Recipe compostMakerRecipe;
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.OnAssemblyLoaded, "scarabol.fishers.assemblyload")]
     public static void OnAssemblyLoaded (string path)
@@ -56,21 +53,21 @@ namespace ScarabolMods
       AssetsDirectory = Path.Combine (Path.GetDirectoryName (path), "assets");
       ModLocalizationHelper.localize (Path.Combine (AssetsDirectory, "localization"), MOD_PREFIX, false);
       Dictionary<string, string> prefixesCompost = new Dictionary<string, string> ();
-      string[] prefixFiles = Directory.GetFiles (Path.Combine (AssetsDirectory, "localization"), "prefixes.json", SearchOption.AllDirectories);
+      string [] prefixFiles = Directory.GetFiles (Path.Combine (AssetsDirectory, "localization"), "prefixes.json", SearchOption.AllDirectories);
       foreach (string filepath in prefixFiles) {
         try {
           JSONNode jsonPrefixes;
-          if (Pipliz.JSON.JSON.Deserialize (filepath, out jsonPrefixes, false)) {
+          if (JSON.Deserialize (filepath, out jsonPrefixes, false)) {
             string locName = Directory.GetParent (filepath).Name;
             string compostPrefix;
             if (jsonPrefixes.TryGetAs ("compost", out compostPrefix)) {
               prefixesCompost [locName] = compostPrefix;
             } else {
-              Pipliz.Log.Write ("Prefix key 'compost' not found in '{0}' file", locName);
+              Log.Write ("Prefix key 'compost' not found in '{0}' file", locName);
             }
           }
         } catch (Exception exception) {
-          Pipliz.Log.WriteError (string.Format ("Exception reading localization from {0}; {1}", filepath, exception.Message));
+          Log.WriteError (string.Format ("Exception reading localization from {0}; {1}", filepath, exception.Message));
         }
       }
       Dictionary<string, JSONNode> compostsLocalizations = new Dictionary<string, JSONNode> ();
@@ -83,7 +80,7 @@ namespace ScarabolMods
           }
           string vanillaPath = MultiPath.Combine ("gamedata", "localization", locPrefix.Key, "types.json");
           JSONNode jsonVanilla;
-          if (Pipliz.JSON.JSON.Deserialize (vanillaPath, out jsonVanilla, false)) {
+          if (JSON.Deserialize (vanillaPath, out jsonVanilla, false)) {
             string localizedTypename;
             if (!jsonVanilla.TryGetAs (compostable.TypeName, out localizedTypename)) {
               localizedTypename = compostable.TypeName;
@@ -96,7 +93,7 @@ namespace ScarabolMods
         try {
           ModLocalizationHelper.localize (locEntry.Key, "types.json", locEntry.Value, COMPOST_PREFIX, false);
         } catch (Exception exception) {
-          Pipliz.Log.WriteError (string.Format ("Exception while localization of {0}; {1}", locEntry.Key, exception.Message));
+          Log.WriteError (string.Format ("Exception while localization of {0}; {1}", locEntry.Key, exception.Message));
         }
       }
     }
@@ -104,7 +101,7 @@ namespace ScarabolMods
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterStartup, "scarabol.fishers.registercallbacks")]
     public static void AfterStartup ()
     {
-      Pipliz.Log.Write ("Loaded Fishers Mod 3.1.0 by Scarabol");
+      Log.Write ("Loaded Fishers Mod 6.0.1 by Scarabol");
     }
 
     [ModLoader.ModCallback (ModLoader.EModCallbackType.AfterItemTypesDefined, "scarabol.fishers.registerjobs")]
@@ -132,7 +129,7 @@ namespace ScarabolMods
         .SetAs ("rotatablez+", ROD_TYPE_KEY + "z+")
         .SetAs ("rotatablez-", ROD_TYPE_KEY + "z-")
       ));
-      foreach (string xz in new string[] { "x+", "x-", "z+", "z-" }) {
+      foreach (string xz in new string [] { "x+", "x-", "z+", "z-" }) {
         itemTypes.Add (ROD_TYPE_KEY + xz, new ItemTypesServer.ItemTypeRaw (ROD_TYPE_KEY + xz, new JSONNode ()
           .SetAs ("parentType", ROD_TYPE_KEY)
           .SetAs ("mesh", MultiPath.Combine (AssetsDirectory, "meshes", "rod" + xz + ".obj"))
@@ -184,7 +181,7 @@ namespace ScarabolMods
     public static void LoadRecipes ()
     {
       rodRecipe = new Recipe (ROD_TYPE_KEY + ".recipe", new InventoryItem (BuiltinBlocks.BlackPlanks, 2), new InventoryItem (ROD_TYPE_KEY, 1), 0);
-      compostMakerRecipe = new Recipe (COMPOSTMAKER_TYPE_KEY + ".recipe", new List<InventoryItem> () {
+      compostMakerRecipe = new Recipe (COMPOSTMAKER_TYPE_KEY + ".recipe", new List<InventoryItem>  {
         new InventoryItem (BuiltinBlocks.Dirt, 1),
         new InventoryItem (BuiltinBlocks.Planks, 1)
       }, new InventoryItem (COMPOSTMAKER_TYPE_KEY, 1), 0);
@@ -196,7 +193,7 @@ namespace ScarabolMods
             ItemTypes.IndexLookup.TryGetIndex (COMPOST_PREFIX + Comp.TypeName, out Comp.CompostType)) {
           CompostablesLookup.Add (Comp);
         } else {
-          Pipliz.Log.WriteError (string.Format ("Index lookup failed for compostable {0}", Comp.TypeName));
+          Log.WriteError (string.Format ("Index lookup failed for compostable {0}", Comp.TypeName));
         }
       }
       Compostables = CompostablesLookup;
@@ -213,45 +210,50 @@ namespace ScarabolMods
     public static void AfterSelectedWorld ()
     {
       ItemTypesServer.SetTextureMapping (FLOAT_TYPE_KEY, new ItemTypesServer.TextureMapping (
-        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "albedo", "float.png")
+        MultiPath.Combine (AssetsDirectory, "textures", "albedo", "float.png")
       ));
       ItemTypesServer.SetTextureMapping (MOD_PREFIX + "compostMakerSide", new ItemTypesServer.TextureMapping (
-        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "albedo", "compostMakerSide.png"),
-        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "normal", "compostMakerSide.png"),
+        MultiPath.Combine (AssetsDirectory, "textures", "albedo", "compostMakerSide.png"),
+        MultiPath.Combine (AssetsDirectory, "textures", "normal", "compostMakerSide.png"),
         null,
-        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "heightSmoothnessSpecularity", "compostMakerSide.png")
+        MultiPath.Combine (AssetsDirectory, "textures", "heightSmoothnessSpecularity", "compostMakerSide.png")
       ));
       ItemTypesServer.SetTextureMapping (MOD_PREFIX + "compostMakerTop", new ItemTypesServer.TextureMapping (
-        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "albedo", "compostMakerTop.png"),
-        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "normal", "compostMakerTop.png"),
+        MultiPath.Combine (AssetsDirectory, "textures", "albedo", "compostMakerTop.png"),
+        MultiPath.Combine (AssetsDirectory, "textures", "normal", "compostMakerTop.png"),
         null,
-        MultiPath.Combine (FishersModEntries.AssetsDirectory, "textures", "heightSmoothnessSpecularity", "compostMakerTop.png")
+        MultiPath.Combine (AssetsDirectory, "textures", "heightSmoothnessSpecularity", "compostMakerTop.png")
       ));
     }
 
-    [ModLoader.ModCallback (ModLoader.EModCallbackType.OnTryChangeBlockUser, "scarabol.fishers.trychangeblock")]
-    public static bool OnTryChangeBlockUser (ModLoader.OnTryChangeBlockUserData userData)
+    [ModLoader.ModCallback (ModLoader.EModCallbackType.OnTryChangeBlock, "scarabol.fishers.trychangeblock")]
+    public static void OnTryChangeBlockUser (ModLoader.OnTryChangeBlockData data)
     {
-      if (!userData.isPrimaryAction) {
-        Vector3Int position = userData.VoxelToChange;
-        string itemtypename = ItemTypes.IndexLookup.GetName (userData.typeToBuild);
-        string basetypename = TypeHelper.RotatableToBasetype (itemtypename);
-        if (basetypename.Equals (ROD_TYPE_KEY)) {
-          bool isBlocked = false;
-          Vector3Int jobDir = TypeHelper.RotatableToVector (itemtypename);
-          for (int c = 1; c <= 3; c++) {
-            if (World.TryIsSolid (position + jobDir * c, out isBlocked) && isBlocked) {
-              return false;
-            }
+      Vector3Int position = data.Position;
+      string itemtypename = ItemTypes.IndexLookup.GetName (data.TypeNew);
+      string basetypename = TypeHelper.RotatableToBasetype (itemtypename);
+      if (basetypename.Equals (ROD_TYPE_KEY)) {
+        Vector3Int jobDir = TypeHelper.RotatableToVector (itemtypename);
+        for (int c = 1; c <= 3; c++) {
+          if (CheckAndBlock (data, position + jobDir * c)) {
+            return;
           }
-          for (int c = 2; c <= 3; c++) {
-            if (World.TryIsSolid (position + jobDir * c + Vector3Int.up, out isBlocked) && isBlocked) {
-              return false;
-            }
+        }
+        for (int c = 2; c <= 3; c++) {
+          if (CheckAndBlock (data, position + jobDir * c + Vector3Int.up)) {
+            return;
           }
         }
       }
-      return true;
+    }
+
+    static bool CheckAndBlock (ModLoader.OnTryChangeBlockData data, Vector3Int position)
+    {
+      if (!World.TryIsSolid (position, out bool isBlocked) || isBlocked) {
+        data.CallbackState = ModLoader.OnTryChangeBlockData.ECallbackState.Cancelled;
+        return true;
+      }
+      return false;
     }
   }
 }

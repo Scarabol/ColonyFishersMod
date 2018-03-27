@@ -1,10 +1,7 @@
-using System;
-using System.IO;
 using System.Collections.Generic;
 using Pipliz;
 using Pipliz.Chatting;
 using Pipliz.JSON;
-using Pipliz.Threading;
 using Pipliz.Mods.APIProvider.Jobs;
 using NPC;
 using Server.NPCs;
@@ -14,12 +11,12 @@ namespace ScarabolMods
 {
   public class FisherJob : BlockJobBase, IBlockJobBase, IRecipeLimitsProvider, INPCTypeDefiner
   {
-    private static float DELAY_JOB = 20.0f;
-    private static float DELAY_BAIT = 2.5f;
-    private static float DELAY_PULL = 1.8f;
-    private static float DELAY_FISH = DELAY_JOB - 0.5f - DELAY_BAIT - DELAY_PULL;
+    static float DELAY_JOB = 20.0f;
+    static float DELAY_BAIT = 2.5f;
+    static float DELAY_PULL = 1.8f;
+    static float DELAY_FISH = DELAY_JOB - 0.5f - DELAY_BAIT - DELAY_PULL;
 
-    private enum PROCESS_STATE
+    enum PROCESS_STATE
     {
       NONE,
       BAITING,
@@ -102,7 +99,7 @@ namespace ScarabolMods
           Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
           if (World.TryGetTypeAt (posFloat, out actualType) && actualType == BuiltinBlocks.Air &&
               World.TryGetTypeAt (posFloat + Vector3Int.down, out actualType) && actualType == BuiltinBlocks.Water) {
-            ServerManager.TryChangeBlock (posFloat, itemTypeFloat, ServerManager.SetBlockFlags.DefaultAudio);
+            ServerManager.TryChangeBlock (posFloat, itemTypeFloat, Owner);
             process = PROCESS_STATE.FISHING;
             state.SetCooldown (DELAY_FISH);
             placedFloat = true;
@@ -118,7 +115,7 @@ namespace ScarabolMods
         for (int depth = 0; depth < 2; depth++) {
           Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
           if (World.TryGetTypeAt (posFloat, out actualType) && actualType == itemTypeFloat) {
-            ServerManager.TryChangeBlock (posFloat, BuiltinBlocks.Air, ServerManager.SetBlockFlags.Default);
+            ServerManager.TryChangeBlock (posFloat, BuiltinBlocks.Air, Owner);
             state.SetIndicator (new Shared.IndicatorState (DELAY_PULL, itemTypeFish));
             ServerManager.SendAudio (position.Vector, FishersModEntries.MOD_PREFIX + "fishing");
             process = PROCESS_STATE.PULLING;
@@ -128,7 +125,7 @@ namespace ScarabolMods
           }
         }
         if (!foundFloat) {
-          Chat.Send (owner, string.Format ("Sam here from {0}, someone stole my fish!", position));
+          Chat.Send (Owner, string.Format ("Sam here from {0}, someone stole my fish!", position));
           process = PROCESS_STATE.NONE;
           state.SetCooldown (0.5f);
         }
@@ -136,7 +133,7 @@ namespace ScarabolMods
         state.Inventory.Add (itemTypeFish);
         process = PROCESS_STATE.NONE;
         state.SetCooldown (0.5f);
-      } else if (Stockpile.GetStockPile (owner).AmountContained (itemTypeFish) >= RecipeStorage.GetPlayerStorage (owner).GetRecipeSetting (FishersModEntries.FISH_TYPE_KEY + ".recipe").Limit) {
+      } else if (Stockpile.GetStockPile (Owner).AmountContained (itemTypeFish) >= RecipeStorage.GetPlayerStorage (Owner).GetRecipeSetting (FishersModEntries.FISH_TYPE_KEY + ".recipe").Limit) {
         state.SetIndicator (new Shared.IndicatorState (8.0f, NPCIndicatorType.None));
         state.SetCooldown (8.0f);
       } else if (state.Inventory.TryGetOneItem (itemTypeBait)) {
@@ -152,16 +149,15 @@ namespace ScarabolMods
 
     public override void OnNPCAtStockpile (ref NPCBase.NPCState state)
     {
-      state.Inventory.TryDump (usedNPC.Colony.UsedStockpile);
+      state.Inventory.Dump (usedNPC.Colony.UsedStockpile);
       state.JobIsDone = true;
       if (!ToSleep) {
         for (int c = 0; c < 5; c++) {
           if (!usedNPC.Colony.UsedStockpile.TryRemove (itemTypeBait)) {
             break;
-          } else {
-            state.Inventory.Add (itemTypeBait);
-            needsBait = false;
           }
+          state.Inventory.Add (itemTypeBait);
+          needsBait = false;
         }
         if (needsBait) {
           state.SetIndicator (new Shared.IndicatorState (8.0f, itemTypeBait, true, false));
@@ -180,7 +176,7 @@ namespace ScarabolMods
       for (int depth = 0; depth < 2; depth++) {
         Vector3Int posFloat = position.Add (0, -depth, 0) + jobdirvec * 3;
         if (World.TryGetTypeAt (posFloat, out actualType) && actualType == itemTypeFloat) {
-          ServerManager.TryChangeBlock (posFloat, BuiltinBlocks.Air, ServerManager.SetBlockFlags.Default);
+          ServerManager.TryChangeBlock (posFloat, BuiltinBlocks.Air, Owner);
           break;
         }
       }
@@ -189,7 +185,7 @@ namespace ScarabolMods
 
     public virtual string GetCraftingLimitsType ()
     {
-      return this.NPCTypeKey;
+      return NPCTypeKey;
     }
 
     public virtual IList<Recipe> GetCraftingLimitsRecipes ()
@@ -203,7 +199,7 @@ namespace ScarabolMods
 
     public virtual List<string> GetCraftingLimitsTriggers ()
     {
-      return new List<string> () {
+      return new List<string>  {
         FishersModEntries.ROD_TYPE_KEY + "x+",
         FishersModEntries.ROD_TYPE_KEY + "x-",
         FishersModEntries.ROD_TYPE_KEY + "z+",
@@ -213,7 +209,7 @@ namespace ScarabolMods
 
     NPCTypeStandardSettings INPCTypeDefiner.GetNPCTypeDefinition ()
     {
-      return new NPCTypeStandardSettings () {
+      return new NPCTypeStandardSettings {
         keyName = NPCTypeKey,
         printName = "Fisher",
         maskColor1 = new UnityEngine.Color32 (110, 200, 255, 255),

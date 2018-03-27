@@ -1,10 +1,6 @@
-using System;
-using System.IO;
 using System.Collections.Generic;
 using Pipliz;
-using Pipliz.Chatting;
 using Pipliz.JSON;
-using Pipliz.Threading;
 using Pipliz.Mods.APIProvider.Jobs;
 using NPC;
 using Server.NPCs;
@@ -14,9 +10,9 @@ namespace ScarabolMods
 {
   public class ComposterJob : CraftingJobBase, IBlockJobBase, INPCTypeDefiner
   {
-    private static float CompostValue = 0;
-    private static ushort itemTypeBait;
-    private static ushort itemTypeCompost;
+    static float CompostValue;
+    static ushort itemTypeBait;
+    static ushort itemTypeCompost;
 
     public override string NPCTypeKey { get { return "scarabol.composter"; } }
 
@@ -43,7 +39,7 @@ namespace ScarabolMods
     public override void OnNPCAtJob (ref NPCBase.NPCState state)
     {
       state.JobIsDone = true;
-      this.usedNPC.LookAt (this.position.Vector);
+      usedNPC.LookAt (position.Vector);
       if (!state.Inventory.IsEmpty) {
         foreach (Compostable Comp in FishersModEntries.Compostables) {
           while (state.Inventory.TryGetOneItem (Comp.Type)) {
@@ -52,7 +48,7 @@ namespace ScarabolMods
         }
       }
       if (usedNPC.Colony.UsedStockpile.AmountContained (itemTypeBait) >= RecipeStorage.GetPlayerStorage (owner).GetRecipeSetting (FishersModEntries.BAIT_TYPE_KEY + ".recipe").Limit) {
-        state.SetIndicator (new Shared.IndicatorState (Pipliz.Random.NextFloat (CraftingCooldown, 2 * CraftingCooldown), NPCIndicatorType.None));
+        state.SetIndicator (new Shared.IndicatorState (Random.NextFloat (CraftingCooldown, 2 * CraftingCooldown), NPCIndicatorType.None));
         state.JobIsDone = false;
       } else if (state.Inventory.GetAmount (itemTypeBait) >= 5) {
         shouldTakeItems = true;
@@ -71,7 +67,7 @@ namespace ScarabolMods
     public override void OnNPCAtStockpile (ref NPCBase.NPCState state)
     {
       state.JobIsDone = true;
-      state.Inventory.TryDump (usedNPC.Colony.UsedStockpile);
+      state.Inventory.Dump (usedNPC.Colony.UsedStockpile);
       if (ToSleep) {
         return;
       }
@@ -112,7 +108,7 @@ namespace ScarabolMods
 
     public override List<string> GetCraftingLimitsTriggers ()
     {
-      return new List<string> () { FishersModEntries.COMPOSTMAKER_TYPE_KEY };
+      return new List<string> { FishersModEntries.COMPOSTMAKER_TYPE_KEY };
     }
 
     public override IList<Recipe> GetCraftingLimitsRecipes ()
@@ -122,7 +118,7 @@ namespace ScarabolMods
 
     NPCTypeStandardSettings INPCTypeDefiner.GetNPCTypeDefinition ()
     {
-      return new NPCTypeStandardSettings () {
+      return new NPCTypeStandardSettings {
         keyName = NPCTypeKey,
         printName = "Composter",
         maskColor1 = new UnityEngine.Color32 (200, 255, 110, 255),
@@ -140,8 +136,8 @@ namespace ScarabolMods
 
     public Compostable (string typeName, int value)
     {
-      this.TypeName = typeName;
-      this.Value = value;
+      TypeName = typeName;
+      Value = value;
     }
   }
 }
